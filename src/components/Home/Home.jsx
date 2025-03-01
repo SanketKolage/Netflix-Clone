@@ -2,112 +2,80 @@ import React, { useEffect, useState } from "react";
 import "./Home.scss";
 import axios from "axios";
 import { Link } from "react-router-dom";
-import { BiPlay } from "react-icons/bi"
-import { AiOutlinePlus } from "react-icons/ai"
+import { BiPlay } from "react-icons/bi";
+import { AiOutlinePlus } from "react-icons/ai";
 
-const apiKey = process.env.REACT_APP_apikey;
-const url = "https://api.themoviedb.org/3";
-const imgUrl = "https://image.tmdb.org/t/p/original";
-const upcoming = "upcoming";
-const nowPlaying = "now_playing";
-const popular = "popular";
-const topRated = "top_rated";
+const apiKey = process.env.REACT_APP_OMDB_API_KEY;
+const url = "http://www.omdbapi.com/";
+const placeholderImg = "https://via.placeholder.com/300x450?text=No+Image";
 
-const Card = ({ img }) => <img className="card" src={img} alt="cover" />;
+const Card = ({ img }) => <img className="card" src={img || placeholderImg} alt="cover" />;
 
 const Row = ({ title, arr = [] }) => (
-    <div className="row">
-        <h2>{title}</h2>
-
-        <div>
-            {arr.map((item, index) => (
-                <Card key={index} img={`${imgUrl}/${item.poster_path}`} />
-            ))}
-        </div>
+  <div className="row">
+    <h2>{title}</h2>
+    <div>
+      {arr.map((item, index) => (
+        <Card key={index} img={item.Poster !== "N/A" ? item.Poster : placeholderImg} />
+      ))}
     </div>
+  </div>
 );
 
 const Home = () => {
-    const [upcomingMovies, setUpcomingMovies] = useState([]);
-    const [nowPlayingMovies, setNowPlayingMovies] = useState([]);
-    const [popularMovies, setPopularMovies] = useState([]);
-    const [topRatedMovies, setTopRatedMovies] = useState([]);
-    const [genre, setGenre] = useState([]);
+  const [popularMovies, setPopularMovies] = useState([]);
+  const [actionMovies, setActionMovies] = useState([]);
+  const [comedyMovies, setComedyMovies] = useState([]);
+  const [horrorMovies, setHorrorMovies] = useState([]);
+  const [dramaMovies, setDramaMovies] = useState([]);
 
-    useEffect(() => {
-        const fetchUpcoming = async () => {
-            const {
-                data: { results },
-            } = await axios.get(`${url}/movie/${upcoming}?api_key=${apiKey}`);
-            setUpcomingMovies(results);
-        };
-        const fetchNowPlaying = async () => {
-            const {
-                data: { results },
-            } = await axios.get(`${url}/movie/${nowPlaying}?api_key=${apiKey}`);
-            setNowPlayingMovies(results);
-        };
-        const fetchPopular = async () => {
-            const {
-                data: { results },
-            } = await axios.get(`${url}/movie/${popular}?api_key=${apiKey}`);
-            setPopularMovies(results);
-        };
-        const fetchTopRated = async () => {
-            const {
-                data: { results },
-            } = await axios.get(`${url}/movie/${topRated}?api_key=${apiKey}`);
-            setTopRatedMovies(results);
-        };
-        const getAllGenre = async () => {
-            const {
-                data: { genres },
-            } = await axios.get(`${url}/genre/movie/list?api_key=${apiKey}`);
-            setGenre(genres);
-            console.log(genres);
-        };
+  useEffect(() => {
+    const fetchMovies = async (searchTerm, setter) => {
+      try {
+        const { data } = await axios.get(`${url}?apikey=${apiKey}&s=${searchTerm}&type=movie`);
+        if (data.Search) setter(data.Search);
+      } catch (error) {
+        console.error("Error fetching movies:", error);
+      }
+    };
 
-        getAllGenre();
+    fetchMovies("Avengers", setPopularMovies);
+    fetchMovies("Action", setActionMovies);
+    fetchMovies("Comedy", setComedyMovies);
+    fetchMovies("Horror", setHorrorMovies);
+    fetchMovies("Drama", setDramaMovies);
+  }, []);
 
-        fetchUpcoming();
-        fetchNowPlaying();
-        fetchPopular();
-        fetchTopRated();
-    }, []);
+  return (
+    <section className="home">
+      <div
+        className="banner"
+        style={{
+          backgroundImage: popularMovies[0]
+            ? `url(${popularMovies[0].Poster})`
+            : "rgb(16, 16, 16)",
+        }}
+      >
+        {popularMovies[0] && <h1>{popularMovies[0].Title}</h1>}
+        {popularMovies[0] && <p>Year: {popularMovies[0].Year}</p>}
 
-    return (
-        <section className="home">
-            <div
-                className="banner"
-                style={{
-                    backgroundImage: popularMovies[0]
-                        ? `url(${`${imgUrl}/${popularMovies[0].poster_path}`})`
-                        : "rgb(16, 16, 16)",
-                }}
-            >
-                {popularMovies[0] && <h1>{popularMovies[0].original_title}</h1>}
-                {popularMovies[0] && <p>{popularMovies[0].overview}</p>}
+        <div>
+          <button>
+            <BiPlay /> Play
+          </button>
+          <button>
+            My List <AiOutlinePlus />
+          </button>
+        </div>
+      </div>
 
-                <div>
-                    <button><BiPlay /> Play  </button>
-                    <button>My List <AiOutlinePlus /> </button>
-                </div>
-            </div>
-
-            <Row title={"Upcoming"} arr={upcomingMovies} />
-            <Row title={"Now Playing"} arr={nowPlayingMovies} />
-            <Row title={"Popular"} arr={popularMovies} />
-            <Row title={"Top Rated"} arr={topRatedMovies} />
-
-            <div className="genreBox">
-                {genre.map((item) => (
-                    <Link key={item.id} to={`/genre/${item.id}`}>
-                        {item.name}
-                    </Link>
-                ))}
-            </div>
-        </section>
-    );
+      <Row title={"Popular"} arr={popularMovies} />
+      <Row title={"Action"} arr={actionMovies} />
+      <Row title={"Comedy"} arr={comedyMovies} />
+      <Row title={"Horror"} arr={horrorMovies} />
+      <Row title={"Drama"} arr={dramaMovies} />
+    </section>
+  );
 };
 
 export default Home;
